@@ -1,49 +1,12 @@
 // 告警事件 store
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { getAlarms, acknowledgeAlarm as apiAcknowledge } from '../api/alarm'
 import type { AlarmEvent } from '../types/mes'
 
-const MOCK_ALARMS: AlarmEvent[] = [
-  {
-    id: 1,
-    equipmentId: 3,
-    equipmentName: 'CVD-03',
-    parameter: 'temperature',
-    value: 735,
-    ucl: 720,
-    lcl: 640,
-    severity: 'CRITICAL',
-    timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    acknowledged: false,
-  },
-  {
-    id: 2,
-    equipmentId: 9,
-    equipmentName: 'Etch-03',
-    parameter: 'pressure',
-    value: 18,
-    ucl: 15,
-    lcl: 3,
-    severity: 'WARNING',
-    timestamp: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
-    acknowledged: false,
-  },
-  {
-    id: 3,
-    equipmentId: 3,
-    equipmentName: 'CVD-03',
-    parameter: 'temperature',
-    value: 728,
-    ucl: 720,
-    lcl: 640,
-    severity: 'WARNING',
-    timestamp: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
-    acknowledged: true,
-  },
-]
-
 export const useAlarmStore = defineStore('alarm', () => {
-  const alarms = ref<AlarmEvent[]>(JSON.parse(JSON.stringify(MOCK_ALARMS)))
+  const alarms  = ref<AlarmEvent[]>([])
+  const loading = ref(false)
 
   const unacknowledgedCount = computed(
     () => alarms.value.filter(a => !a.acknowledged).length
@@ -54,19 +17,26 @@ export const useAlarmStore = defineStore('alarm', () => {
     alarms.value.unshift(alarm)
   }
 
-  // 確認告警
-  function acknowledgeAlarm(id: number) {
+  // 確認告警（呼叫 API + 更新本地狀態）
+  async function acknowledgeAlarm(id: number) {
+    await apiAcknowledge(id)
     const alarm = alarms.value.find(a => a.id === id)
     if (alarm) alarm.acknowledged = true
   }
 
-  // Phase 2 後換成真實 API
-  async function fetchAlarms() {
-    alarms.value = JSON.parse(JSON.stringify(MOCK_ALARMS))
+  // 從後端 API 取得告警列表
+  async function fetchAlarms(all = false) {
+    loading.value = true
+    try {
+      alarms.value = await getAlarms(all)
+    } finally {
+      loading.value = false
+    }
   }
 
   return {
     alarms,
+    loading,
     unacknowledgedCount,
     addAlarm,
     acknowledgeAlarm,

@@ -6,6 +6,7 @@
         <span class="stat-item">在製品 WIP：<b>{{ wipCount }}</b></span>
         <span class="stat-item">排隊中：<b>{{ queuedCount }}</b></span>
       </div>
+      <el-button type="primary" @click="dialogVisible = true">+ 建立 Lot</el-button>
     </div>
 
     <!-- Lot 狀態分欄 -->
@@ -31,15 +32,63 @@
               <span class="priority-badge" :class="'p' + lot.priority">P{{ lot.priority }}</span>
             </div>
             <div class="lot-wafer">{{ lot.waferCount }} wafers</div>
+            <!-- 排隊中的 Lot 顯示派工按鈕 -->
+            <el-button
+              v-if="lot.status === 'QUEUED'"
+              size="small"
+              type="success"
+              plain
+              class="dispatch-btn"
+              :loading="dispatchingId === lot.id"
+              @click.stop="handleDispatch(lot.id)"
+            >
+              派工
+            </el-button>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- 建立 Lot 對話框 -->
+    <el-dialog
+      v-model="dialogVisible"
+      title="建立新 Lot"
+      width="400px"
+    >
+      <el-form :model="form" label-width="80px">
+        <el-form-item label="Lot 編號">
+          <el-input v-model="form.lot_number" placeholder="例：LOT-2024-001" />
+        </el-form-item>
+        <el-form-item label="產品">
+          <el-input v-model="form.product" placeholder="例：DRAM-32G" />
+        </el-form-item>
+        <el-form-item label="Recipe ID">
+          <el-input-number v-model="form.recipe_id" :min="1" />
+        </el-form-item>
+        <el-form-item label="優先度">
+          <el-select v-model="form.priority">
+            <el-option label="P1（最高）" :value="1" />
+            <el-option label="P2" :value="2" />
+            <el-option label="P3" :value="3" />
+            <el-option label="P4" :value="4" />
+            <el-option label="P5（最低）" :value="5" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="Wafer 數">
+          <el-input-number v-model="form.wafer_count" :min="1" :max="25" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="creating" @click="handleCreate">建立</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import { useLotStore } from '../stores/lot'
 
 const lotStore    = useLotStore()
@@ -72,6 +121,51 @@ const columns = computed(() => [
     lots: lotStore.lots.filter(l => l.status === 'COMPLETED'),
   },
 ])
+
+// 建立 Lot
+const dialogVisible = ref(false)
+const creating = ref(false)
+const form = reactive({
+  lot_number: '',
+  product: '',
+  recipe_id: 1,
+  priority: 3,
+  wafer_count: 25,
+})
+
+async function handleCreate() {
+  if (!form.lot_number || !form.product) {
+    ElMessage.warning('請填寫 Lot 編號與產品')
+    return
+  }
+  creating.value = true
+  try {
+    await lotStore.addLot({ ...form })
+    ElMessage.success(`Lot ${form.lot_number} 建立成功`)
+    dialogVisible.value = false
+    form.lot_number = ''
+    form.product = ''
+  } catch (e: unknown) {
+    ElMessage.error(e instanceof Error ? e.message : '建立失敗')
+  } finally {
+    creating.value = false
+  }
+}
+
+// 派工
+const dispatchingId = ref<number | null>(null)
+
+async function handleDispatch(id: number) {
+  dispatchingId.value = id
+  try {
+    await lotStore.dispatch(id)
+    ElMessage.success('派工成功')
+  } catch (e: unknown) {
+    ElMessage.error(e instanceof Error ? e.message : '派工失敗')
+  } finally {
+    dispatchingId.value = null
+  }
+}
 
 onMounted(() => {
   lotStore.fetchLots()
@@ -199,5 +293,10 @@ onMounted(() => {
   font-size: 11px;
   color: var(--el-text-color-regular);
   margin-top: 4px;
+}
+
+.dispatch-btn {
+  margin-top: 8px;
+  width: 100%;
 }
 </style>

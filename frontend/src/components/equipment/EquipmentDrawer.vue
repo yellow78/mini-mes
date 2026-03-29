@@ -97,10 +97,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import SpcMiniChart from '../spc/SpcMiniChart.vue'
+import { holdEquipment, getSpcHistory } from '../../api/equipment'
+import { useEquipmentStore } from '../../stores/equipment'
 import type { Equipment, SpcDataPoint } from '../../types/mes'
 
 const props = defineProps<{
@@ -162,30 +164,25 @@ const utilizationColor = computed(() => {
   return 'var(--mes-idle)'
 })
 
-// 產生 Mock SPC 數據（20 個點）用於展示
-const spcData = computed<SpcDataPoint[]>(() => {
-  const e = props.equipment
-  if (!e) return []
-  const ucl = e.ucl_temp
-  const lcl = e.lcl_temp
-  const center = (ucl + lcl) / 2
-  const sigma  = (ucl - center) / 3
+// 從 API 取得 SPC 歷史資料（最近 20 點）
+const spcData = ref<SpcDataPoint[]>([])
+watch(() => props.equipment, async (eq) => {
+  if (!eq) { spcData.value = []; return }
+  spcData.value = await getSpcHistory(eq.id, 20)
+}, { immediate: true })
 
-  return Array.from({ length: 20 }, (_, i) => {
-    const noise = (Math.random() - 0.5) * sigma * 2
-    const value = parseFloat((center + noise).toFixed(1))
-    return {
-      timestamp: new Date(Date.now() - (19 - i) * 5 * 60 * 1000).toISOString(),
-      value,
-      ucl,
-      lcl,
-      isAlarm: value > ucl || value < lcl,
-    }
-  })
-})
+const equipmentStore = useEquipmentStore()
 
-function handleHold() {
-  ElMessage.warning(`已發送 Hold 指令至 ${props.equipment?.name}（Phase 2 接 API）`)
+async function handleHold() {
+  if (!props.equipment) return
+  try {
+    await holdEquipment(props.equipment.id)
+    ElMessage.success(`${props.equipment.name} 已 Hold`)
+    visible.value = false
+    await equipmentStore.fetchEquipments()
+  } catch (e: unknown) {
+    ElMessage.error(e instanceof Error ? e.message : 'Hold 失敗')
+  }
 }
 
 function goToSpc() {

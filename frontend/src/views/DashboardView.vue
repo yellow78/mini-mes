@@ -36,21 +36,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useEquipmentStore } from '../stores/equipment'
+import { useAlarmStore } from '../stores/alarm'
+import { useWebSocket } from '../composables/useWebSocket'
 import EquipmentGroupList from '../components/equipment/EquipmentGroupList.vue'
 
-const equipmentStore    = useEquipmentStore()
+const equipmentStore     = useEquipmentStore()
+const alarmStore         = useAlarmStore()
 const overallUtilization = computed(() => equipmentStore.overallUtilization)
-const statusCount       = computed(() => equipmentStore.statusCount)
+const statusCount        = computed(() => equipmentStore.statusCount)
 
-onMounted(() => {
-  equipmentStore.fetchEquipments()
-  equipmentStore.startSimulation()
-})
+const { connect } = useWebSocket()
 
-onUnmounted(() => {
-  equipmentStore.stopSimulation()
+onMounted(async () => {
+  connect()
+  await Promise.all([
+    equipmentStore.fetchEquipments(),
+    alarmStore.fetchAlarms(),
+  ])
 })
 </script>
 
