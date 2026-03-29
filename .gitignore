@@ -1,0 +1,43 @@
+# ===== 環境變數 / 憑證（絕對不上傳）=====
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+credentials/
+
+# ===== 前端（Node）=====
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# ===== Go 後端 =====
+backend/bin/
+backend/*.exe
+
+# ===== Python 分析引擎 =====
+analytics/__pycache__/
+analytics/*.pyc
+analytics/.venv/
+analytics/venv/
+
+# ===== 資料庫 =====
+*.sql.bak
+pgdata/
+
+# ===== Docker =====
+docker-compose.override.yml
+
+# ===== Claude Code 本機設定 =====
+.claude/settings.local.json
+
+# ===== 系統 / IDE =====
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

@@ -1,0 +1,98 @@
+/* ===== MES 全域樣式 ===== */
+
+/* Element Plus Token 覆蓋（深色主題） */
+:root {
+  --el-bg-color: #0f172a;
+  --el-bg-color-page: #0f172a;
+  --el-bg-color-overlay: #1e293b;
+  --el-fill-color-blank: #1e293b;
+  --el-border-color: #334155;
+  --el-border-color-light: #1e293b;
+  --el-text-color-primary: #e2e8f0;
+  --el-text-color-regular: #94a3b8;
+  --el-color-primary: #3b82f6;
+  --el-color-primary-light-9: rgba(59, 130, 246, 0.1);
+}
+
+/* MES 設備狀態專用色 */
+:root {
+  --mes-running: #22c55e;
+  --mes-idle: #94a3b8;
+  --mes-down: #ef4444;
+  --mes-pm: #f59e0b;
+  --mes-alarm: #ef4444;
+  --mes-surface: #1e293b;
+  --mes-surface-deep: #0f172a;
+  --mes-border: #334155;
+}
+
+/* Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--mes-surface-deep);
+  color: var(--el-text-color-primary);
+}
+
+/* 捲軸樣式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--mes-surface-deep);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--mes-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Element Plus 深色覆蓋 */
+.el-drawer {
+  background: var(--mes-surface) !important;
+  border-left: 1px solid var(--mes-border) !important;
+}
+
+.el-drawer__header {
+  color: var(--el-text-color-primary) !important;
+  border-bottom: 1px solid var(--mes-border) !important;
+  padding-bottom: 12px !important;
+  margin-bottom: 0 !important;
+}
+
+.el-drawer__body {
+  padding: 16px !important;
+  overflow-y: auto !important;
+}
+
+.el-input__wrapper {
+  background: var(--mes-surface) !important;
+  border-color: var(--mes-border) !important;
+}
+
+.el-radio-button__inner {
+  background: var(--mes-surface) !important;
+  border-color: var(--mes-border) !important;
+  color: var(--el-text-color-regular) !important;
+}
+
+.el-radio-button.is-active .el-radio-button__inner {
+  background: var(--el-color-primary) !important;
+  border-color: var(--el-color-primary) !important;
+  color: #fff !important;
+}
