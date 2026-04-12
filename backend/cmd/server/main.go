@@ -15,6 +15,7 @@ import (
 	"github.com/yellow78/mini-mes/backend/internal/repository"
 	"github.com/yellow78/mini-mes/backend/internal/service"
 	"github.com/yellow78/mini-mes/backend/internal/simulator"
+	"github.com/yellow78/mini-mes/backend/pkg/spcclient"
 	ws "github.com/yellow78/mini-mes/backend/pkg/websocket"
 )
 
@@ -44,7 +45,9 @@ func main() {
 	alarmHandler := handler.NewAlarmHandler(alarmRepo, spcRepo, equipSvc)
 
 	// 啟動產線模擬器（Demo 用，定時廣播狀態變更與 SPC 告警）
-	sim := simulator.NewSimulator(equipSvc, hub)
+	analyticsURL := getEnv("ANALYTICS_URL", "http://localhost:8001")
+	spcClient := spcclient.NewClient(analyticsURL)
+	sim := simulator.NewSimulator(equipSvc, spcRepo, alarmRepo, spcClient, hub)
 	sim.Start(context.Background())
 
 	// 設定 Gin router
