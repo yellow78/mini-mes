@@ -62,8 +62,21 @@
         <el-form-item label="產品">
           <el-input v-model="form.product" placeholder="例：DRAM-32G" />
         </el-form-item>
-        <el-form-item label="Recipe ID">
-          <el-input-number v-model="form.recipe_id" :min="1" />
+        <el-form-item label="Recipe">
+          <el-select v-model="form.recipe_id" placeholder="選擇製程配方" style="width: 100%">
+            <el-option-group
+              v-for="type in recipeGroups"
+              :key="type.label"
+              :label="type.label"
+            >
+              <el-option
+                v-for="r in type.recipes"
+                :key="r.id"
+                :label="`${r.name}（${r.target_temp}°C / ${r.duration_min}min）`"
+                :value="r.id"
+              />
+            </el-option-group>
+          </el-select>
         </el-form-item>
         <el-form-item label="優先度">
           <el-select v-model="form.priority">
@@ -90,6 +103,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useLotStore } from '../stores/lot'
+import { getRecipes, type Recipe } from '../api/recipe'
 
 const lotStore    = useLotStore()
 const wipCount    = computed(() => lotStore.wipCount)
@@ -167,8 +181,18 @@ async function handleDispatch(id: number) {
   }
 }
 
-onMounted(() => {
+// Recipe 下拉選單資料（依設備類型分組）
+const recipes = ref<Recipe[]>([])
+const recipeGroups = computed(() => {
+  const types = ['CVD', 'Etch', 'CMP', 'Diffusion']
+  return types
+    .map(t => ({ label: t, recipes: recipes.value.filter(r => r.equipment_type === t) }))
+    .filter(g => g.recipes.length > 0)
+})
+
+onMounted(async () => {
   lotStore.fetchLots()
+  recipes.value = await getRecipes()
 })
 </script>
 

@@ -35,14 +35,16 @@ func main() {
 	lotRepo     := repository.NewLotRepository(db)
 	alarmRepo   := repository.NewAlarmRepository(db)
 	spcRepo     := repository.NewSpcRepository(db)
+	recipeRepo  := repository.NewRecipeRepository(db)
 
 	equipSvc    := service.NewEquipmentService(equipRepo)
 	lotSvc      := service.NewLotService(lotRepo)
 	dispatchSvc := service.NewDispatchService(equipRepo, lotRepo)
 
-	equipHandler := handler.NewEquipmentHandler(equipSvc, hub)
-	lotHandler   := handler.NewLotHandler(lotSvc, dispatchSvc, hub)
-	alarmHandler := handler.NewAlarmHandler(alarmRepo, spcRepo, equipSvc)
+	equipHandler  := handler.NewEquipmentHandler(equipSvc, hub)
+	lotHandler    := handler.NewLotHandler(lotSvc, dispatchSvc, hub)
+	alarmHandler  := handler.NewAlarmHandler(alarmRepo, spcRepo, equipSvc)
+	recipeHandler := handler.NewRecipeHandler(recipeRepo)
 
 	// 啟動產線模擬器（Demo 用，定時廣播狀態變更與 SPC 告警）
 	analyticsURL := getEnv("ANALYTICS_URL", "http://localhost:8001")
@@ -90,6 +92,8 @@ func main() {
 		alarms.PUT("/:id/acknowledge",     alarmHandler.AcknowledgeAlarm)
 
 		v1.GET("/spc/:equipment_id", alarmHandler.GetSpc)
+
+		v1.GET("/recipes", recipeHandler.ListRecipes)
 	}
 
 	port := os.Getenv("API_PORT")

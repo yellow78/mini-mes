@@ -78,6 +78,8 @@ export function useWebSocket() {
       case 'lot_dispatched': {
         const { lot_id } = msg.payload as { lot_id: number; equipment_id: number }
         lotStore.updateLotStatus(lot_id, 'RUNNING')
+        // 派工後重新拉取設備列表，讓 Dashboard 顯示最新 Current Lot
+        equipmentStore.fetchEquipments()
         break
       }
     }
