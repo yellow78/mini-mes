@@ -119,7 +119,7 @@ mini-mes/
 | 2     | DB Schema + Go REST API           | 完成      |
 | 3     | WebSocket 即時推送                | 完成      |
 | 4     | Python SPC 告警引擎               | 完成      |
-| 5     | Lot 派工流程                      | 待開始    |
+| 5     | Lot 派工流程                      | 完成      |
 | 6     | Docker Compose 整合 + Demo 準備   | 完成      |
 
 **最低可展示目標：Phase 1–3 完成。已達成。**
