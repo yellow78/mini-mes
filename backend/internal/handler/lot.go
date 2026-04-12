@@ -79,5 +79,10 @@ func (h *LotHandler) DispatchLot(c *gin.Context) {
 		"lot_id":       result.LotID,
 		"equipment_id": result.EquipmentID,
 	})
+	// 設備狀態改為 RUNNING，通知 Dashboard 即時更新
+	h.hub.Broadcast("equipment_status_changed", gin.H{
+		"equipment_id": result.EquipmentID,
+		"status":       "RUNNING",
+	})
 	c.JSON(http.StatusOK, gin.H{"data": result})
 }
