@@ -110,14 +110,14 @@ mini-mes/
 
 | Phase | 內容                              | 狀態      |
 |-------|-----------------------------------|-----------|
-| 1     | Vue Dashboard + Mock 資料         | 進行中    |
-| 2     | DB Schema + Go REST API           | 待開始    |
-| 3     | WebSocket 即時推送                | 待開始    |
-| 4     | Python SPC 告警引擎               | 待開始    |
+| 1     | Vue Dashboard + Mock 資料         | 完成      |
+| 2     | DB Schema + Go REST API           | 完成      |
+| 3     | WebSocket 即時推送                | 完成      |
+| 4     | Python SPC 告警引擎               | 完成      |
 | 5     | Lot 派工流程                      | 待開始    |
-| 6     | Docker Compose 整合 + Demo 準備   | 待開始    |
+| 6     | Docker Compose 整合 + Demo 準備   | 完成      |
 
-**最低可展示目標：Phase 1–3 完成。**
+**最低可展示目標：Phase 1–3 完成。已達成。**
 
 ---
 
