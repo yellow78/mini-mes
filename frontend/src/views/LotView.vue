@@ -148,8 +148,8 @@ const form = reactive({
 })
 
 async function handleCreate() {
-  if (!form.lot_number || !form.product) {
-    ElMessage.warning('請填寫 Lot 編號與產品')
+  if (!form.lot_number || !form.product || !form.recipe_id) {
+    ElMessage.warning('請填寫 Lot 編號、產品與 Recipe')
     return
   }
   creating.value = true
@@ -193,6 +193,10 @@ const recipeGroups = computed(() => {
 onMounted(async () => {
   lotStore.fetchLots()
   recipes.value = await getRecipes()
+  // Recipes 載入後更新預設值，避免 el-select 找不到對應 option 時清空 recipe_id
+  if (recipes.value.length > 0) {
+    form.recipe_id = recipes.value[0].id
+  }
 })
 </script>
 
