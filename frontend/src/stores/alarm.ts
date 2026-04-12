@@ -17,9 +17,12 @@ export const useAlarmStore = defineStore('alarm', () => {
     alarms.value.unshift(alarm)
   }
 
-  // 確認告警（呼叫 API + 更新本地狀態）
+  // 確認告警（DB 告警同步後端；WS 即時告警 id 為 Date.now() 13位數，僅更新前端）
   async function acknowledgeAlarm(id: number) {
-    await apiAcknowledge(id)
+    const isDbAlarm = id < 1_000_000_000_000
+    if (isDbAlarm) {
+      await apiAcknowledge(id)
+    }
     const alarm = alarms.value.find(a => a.id === id)
     if (alarm) alarm.acknowledged = true
   }
