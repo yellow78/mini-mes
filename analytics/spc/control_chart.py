@@ -45,12 +45,13 @@ def analyze(values: list[float], ucl: float, lcl: float) -> AnalysisResult:
     alarm_set: set[int] = set()
 
     # --- Nelson Rule 1 ---
-    # 任一點超出 UCL 或 LCL（3σ 管制界限）
-    for i, v in enumerate(values):
-        if v > ucl or v < lcl:
-            direction = "UCL" if v > ucl else "LCL"
-            violations.append(f"Rule1: point[{i}]={v:.2f} 超出{direction}={ucl if v > ucl else lcl:.2f}")
-            alarm_set.add(i)
+    # 最新量測值超出 UCL 或 LCL（即時判斷，不對歷史點重複告警）
+    latest = values[-1]
+    last_idx = len(values) - 1
+    if latest > ucl or latest < lcl:
+        direction = "UCL" if latest > ucl else "LCL"
+        violations.append(f"Rule1: 最新值={latest:.2f} 超出{direction}={ucl if latest > ucl else lcl:.2f}")
+        alarm_set.add(last_idx)
 
     # --- Nelson Rule 2 ---
     # 連續 9 點在均值同一側（製程偏移）
