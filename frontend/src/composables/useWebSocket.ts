@@ -14,7 +14,9 @@ export function useWebSocket() {
   const lotStore       = useLotStore()
 
   function connect() {
-    const url = `ws://${window.location.hostname}:8080/ws`
+    // 透過 Vite proxy（開發）或同源（部署）連線，避免 hardcode port
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const url = `${protocol}//${window.location.host}/ws`
     ws = new WebSocket(url)
 
     ws.onopen = () => {

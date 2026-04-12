@@ -9,13 +9,19 @@ import (
 	"github.com/yellow78/mini-mes/backend/internal/service"
 )
 
+// Broadcaster WebSocket 廣播介面（handler 套件共用）
+type Broadcaster interface {
+	Broadcast(event string, payload any)
+}
+
 // EquipmentHandler 設備 HTTP 處理器
 type EquipmentHandler struct {
 	svc *service.EquipmentService
+	hub Broadcaster
 }
 
-func NewEquipmentHandler(svc *service.EquipmentService) *EquipmentHandler {
-	return &EquipmentHandler{svc: svc}
+func NewEquipmentHandler(svc *service.EquipmentService, hub Broadcaster) *EquipmentHandler {
+	return &EquipmentHandler{svc: svc, hub: hub}
 }
 
 // ListEquipments GET /api/v1/equipment
@@ -76,6 +82,10 @@ func (h *EquipmentHandler) UpdateStatus(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	h.hub.Broadcast("equipment_status_changed", gin.H{
+		"equipment_id": id,
+		"status":       body.Status,
+	})
 	c.JSON(http.StatusOK, gin.H{"data": "ok"})
 }
 
@@ -90,5 +100,9 @@ func (h *EquipmentHandler) HoldEquipment(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	h.hub.Broadcast("equipment_status_changed", gin.H{
+		"equipment_id": id,
+		"status":       model.StatusDown,
+	})
 	c.JSON(http.StatusOK, gin.H{"data": "ok"})
 }

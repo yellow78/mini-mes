@@ -13,10 +13,11 @@ import (
 type LotHandler struct {
 	lotSvc      *service.LotService
 	dispatchSvc *service.DispatchService
+	hub         Broadcaster
 }
 
-func NewLotHandler(lotSvc *service.LotService, dispatchSvc *service.DispatchService) *LotHandler {
-	return &LotHandler{lotSvc: lotSvc, dispatchSvc: dispatchSvc}
+func NewLotHandler(lotSvc *service.LotService, dispatchSvc *service.DispatchService, hub Broadcaster) *LotHandler {
+	return &LotHandler{lotSvc: lotSvc, dispatchSvc: dispatchSvc, hub: hub}
 }
 
 // ListLots GET /api/v1/lots
@@ -74,5 +75,9 @@ func (h *LotHandler) DispatchLot(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	h.hub.Broadcast("lot_dispatched", gin.H{
+		"lot_id":       result.LotID,
+		"equipment_id": result.EquipmentID,
+	})
 	c.JSON(http.StatusOK, gin.H{"data": result})
 }

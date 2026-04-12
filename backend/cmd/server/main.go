@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"github.com/yellow78/mini-mes/backend/internal/handler"
 	"github.com/yellow78/mini-mes/backend/internal/repository"
 	"github.com/yellow78/mini-mes/backend/internal/service"
+	"github.com/yellow78/mini-mes/backend/internal/simulator"
 	ws "github.com/yellow78/mini-mes/backend/pkg/websocket"
 )
 
@@ -37,9 +39,13 @@ func main() {
 	lotSvc      := service.NewLotService(lotRepo)
 	dispatchSvc := service.NewDispatchService(equipRepo, lotRepo)
 
-	equipHandler := handler.NewEquipmentHandler(equipSvc)
-	lotHandler   := handler.NewLotHandler(lotSvc, dispatchSvc)
+	equipHandler := handler.NewEquipmentHandler(equipSvc, hub)
+	lotHandler   := handler.NewLotHandler(lotSvc, dispatchSvc, hub)
 	alarmHandler := handler.NewAlarmHandler(alarmRepo, spcRepo, equipSvc)
+
+	// 啟動產線模擬器（Demo 用，定時廣播狀態變更與 SPC 告警）
+	sim := simulator.NewSimulator(equipSvc, hub)
+	sim.Start(context.Background())
 
 	// 設定 Gin router
 	r := gin.Default()
