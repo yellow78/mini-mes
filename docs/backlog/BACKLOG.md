@@ -42,6 +42,11 @@
 
 ### 前端
 
+- [ ] 🟡 **package.json 未宣告 engines 欄位**
+  - 檔案：`frontend/package.json`
+  - 問題：`vitest 4.x` 要求 Node ≥ 20，但未在 `engines` 宣告，使用 Node 18 時只會出現 npm warn 而非明確錯誤
+  - 修正：加入 `"engines": { "node": ">=20.0.0" }`
+
 - [ ] 🟠 **Store API 無重試機制**
   - 檔案：`frontend/src/stores/equipment.ts`、`lot.ts`、`alarm.ts`
   - 問題：API 失敗直接報錯，短暫網路抖動會導致畫面掛掉
@@ -74,6 +79,11 @@
   - 檔案：`analytics/main.py`
   - 問題：未驗證 `ucl > lcl`、`values` 不為空
   - 修正：在 endpoint 加入 Pydantic validator 或手動 guard
+
+- [ ] 🟡 **pytest 未列入 requirements.txt**
+  - 檔案：`analytics/requirements.txt`
+  - 問題：`pytest` 未記錄，新環境建立 `.venv` 後無法直接執行測試
+  - 修正：新增 `requirements-dev.txt` 並加入 `pytest`，或於 README 補充安裝指令
 
 ---
 

@@ -19,8 +19,8 @@ backend/bin/
 backend/*.exe
 
 # ===== Python 分析引擎 =====
-analytics/__pycache__/
-analytics/*.pyc
+analytics/**/__pycache__/
+analytics/**/*.pyc
 analytics/.venv/
 analytics/venv/
 
