@@ -19,8 +19,8 @@ backend/bin/
 backend/*.exe
 
 # ===== Python 分析引擎 =====
-analytics/__pycache__/
-analytics/*.pyc
+analytics/**/__pycache__/
+analytics/**/*.pyc
 analytics/.venv/
 analytics/venv/
 
@@ -32,7 +32,7 @@ pgdata/
 docker-compose.override.yml
 
 # ===== Claude Code 本機設定 =====
-.claude/settings.local.json
+.claude/
 
 # ===== 系統 / IDE =====
 .DS_Store
