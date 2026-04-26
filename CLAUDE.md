@@ -1,19 +1,58 @@
 # Mini-MES — Claude CLI 開發工作手冊
 
 ## Claude 互動規範
+
 - **回答語言：繁體中文**
 - 程式碼內的註解使用繁體中文
 - 變數名稱、函式名稱、檔案名稱維持英文（程式碼慣例）
 - 架構說明、錯誤排查、開發建議一律用繁體中文回答
 
 ## Git 工作流程規範
+
 - 每個 Phase 或功能在獨立 feature branch 開發
 - **合併到 main 必須是獨立步驟，且須先詢問使用者確認後才執行**
 - commit 訊息不附加 Co-Authored-By Claude
 
+### 分支命名規範：`<type>-<scope>-<description>`
+
+| Type 前綴  | 用途              |
+| ---------- | ----------------- |
+| `feat`     | 新功能、新 Phase  |
+| `fix`      | Bug 修復          |
+| `docs`     | 文件更新          |
+| `test`     | 測試相關          |
+| `chore`    | 設定、依賴、CI/CD |
+| `refactor` | 重構（不改功能）  |
+
+規則：
+
+- 全小寫、用 `_` 連接單字
+- `<scope>` 可選，標示影響範圍（`frontend`、`backend`、`analytics`）
+- 不超過 50 字元
+- 範例：`feat-phase_6-docker`、`fix-backend-ws_reconnect`、`test-frontend-store`
+
+### Commit 訊息規範：`<type>:[scope] <description>`
+
+| Type    | 用途              |
+|---------|-------------------|
+| `feat`  | 新功能、新 Phase  |
+| `fix`   | Bug 修復          |
+| `docs`  | 文件更新          |
+| `test`  | 測試相關          |
+| `chore` | 設定、依賴、CI/CD |
+| `refactor` | 重構（不改功能） |
+
+規則：
+
+- `[scope]` 可選，影響多個範圍時並列，例如 `[frontend][backend]`
+- `<description>` 使用繁體中文，簡明描述做了什麼
+- 範例：`test:[frontend][analytics] 修正前端 store 測試並新增 SPC 分析引擎測試`
+- 範例：`fix:[backend] 修正 WebSocket 斷線重連邏輯`
+
 ---
 
 ## 專案定位
+
 半導體製造執行系統（MES）展示專案。
 目標：展示 MES 領域知識 + 全端開發能力 + 系統設計思維。
 Demo 時間約 3–5 分鐘，需要能即時跑起來。
@@ -22,13 +61,13 @@ Demo 時間約 3–5 分鐘，需要能即時跑起來。
 
 ## 技術棧
 
-| 層級       | 技術                                      | 目錄           |
-|------------|-------------------------------------------|----------------|
-| 前端       | Vue 3 + TypeScript + Element Plus + Vite  | `frontend/`    |
-| 後端 API   | Go + Gin + WebSocket (gorilla)            | `backend/`     |
-| 分析引擎   | Python + FastAPI + pandas                 | `analytics/`   |
-| 資料庫     | PostgreSQL + Redis                        | `migrations/`  |
-| 容器化     | Docker Compose                            | 根目錄         |
+| 層級     | 技術                                     | 目錄          |
+| -------- | ---------------------------------------- | ------------- |
+| 前端     | Vue 3 + TypeScript + Element Plus + Vite | `frontend/`   |
+| 後端 API | Go + Gin + WebSocket (gorilla)           | `backend/`    |
+| 分析引擎 | Python + FastAPI + pandas                | `analytics/`  |
+| 資料庫   | PostgreSQL + Redis                       | `migrations/` |
+| 容器化   | Docker Compose                           | 根目錄        |
 
 ---
 
@@ -113,14 +152,14 @@ mini-mes/
 
 > 每個 Phase 結束都是獨立可展示的狀態，不依賴下一個 Phase。
 
-| Phase | 內容                              | 狀態      |
-|-------|-----------------------------------|-----------|
-| 1     | Vue Dashboard + Mock 資料         | 完成      |
-| 2     | DB Schema + Go REST API           | 完成      |
-| 3     | WebSocket 即時推送                | 完成      |
-| 4     | Python SPC 告警引擎               | 完成      |
-| 5     | Lot 派工流程                      | 完成      |
-| 6     | Docker Compose 整合 + Demo 準備   | 完成      |
+| Phase | 內容                            | 狀態 |
+| ----- | ------------------------------- | ---- |
+| 1     | Vue Dashboard + Mock 資料       | 完成 |
+| 2     | DB Schema + Go REST API         | 完成 |
+| 3     | WebSocket 即時推送              | 完成 |
+| 4     | Python SPC 告警引擎             | 完成 |
+| 5     | Lot 派工流程                    | 完成 |
+| 6     | Docker Compose 整合 + Demo 準備 | 完成 |
 
 **最低可展示目標：Phase 1–3 完成。已達成。**
 
@@ -135,22 +174,26 @@ mini-mes/
 採用「群組折疊 + 列表行」設計：
 
 #### 整體佈局
+
 - 頂部 Header：Logo、導覽列、Alarm 快捷按鈕、即時時鐘
 - KPI 列：整體稼動率、Running / Idle / Down / PM / Alarm 數量
 - 工具列：搜尋框 + 類型篩選 Pill + 「僅看 Alarm」快篩
 - 群組折疊區：依設備類型（CVD / Etch / CMP / Diffusion）分群
 
 #### 群組折疊規則
+
 - 每個群組 Header 收合時顯示：設備類型名、各狀態數量小圓點、稼動率橫條
 - 有 Alarm 的群組：Header 邊框變紅 + 顯示「N Alarm」紅色標籤
 - 群組展開後為表格列表，欄位：設備名 / 狀態 / Current Lot / 溫度 / 壓力 / 稼動率
 - **Alarm 設備永遠排在群組最頂部**，左側有紅色邊框標記
 
 #### 設備詳細 Drawer
+
 - 點擊任一設備列 → 右側滑出 Drawer（不跳頁）
 - Drawer 內容：設備名稱、狀態 Badge、Current Lot + Recipe、製程參數（溫度/壓力含 UCL/LCL）、SPC 迷你趨勢圖（最近 20 點）、操作按鈕（Hold 設備 / 查看歷史）
 
 #### 篩選行為
+
 - 「僅看 Alarm」：隱藏無 Alarm 的群組，Alarm 設備直接展開
 - 類型篩選（CVD / Etch…）：只顯示該類型群組
 - 搜尋：即時 filter 設備名稱或 Lot 編號
@@ -159,19 +202,19 @@ mini-mes/
 
 ## 產業術語對照（程式碼與 UI 必須使用）
 
-| 術語        | 說明                                         |
-|-------------|----------------------------------------------|
-| Equipment   | 設備（CVD / Etch / CMP / Diffusion）         |
-| Lot         | 批次，一批 wafer 的生產單位                  |
-| Wafer       | 晶圓，Lot 內最小追蹤單位                     |
-| Recipe      | 製程配方，定義溫度 / 壓力 / 時間參數         |
-| WIP         | Work In Progress，在製品                     |
-| SPC         | Statistical Process Control，統計製程管制    |
-| UCL / LCL   | Upper / Lower Control Limit，管制上下限      |
-| Dispatch    | 派工，將 Lot 指派給可用設備                  |
-| Downtime    | 設備停機時間                                 |
-| PM          | Preventive Maintenance，預防性保養           |
-| Hold        | 暫停該設備或 Lot 的生產                      |
+| 術語      | 說明                                      |
+| --------- | ----------------------------------------- |
+| Equipment | 設備（CVD / Etch / CMP / Diffusion）      |
+| Lot       | 批次，一批 wafer 的生產單位               |
+| Wafer     | 晶圓，Lot 內最小追蹤單位                  |
+| Recipe    | 製程配方，定義溫度 / 壓力 / 時間參數      |
+| WIP       | Work In Progress，在製品                  |
+| SPC       | Statistical Process Control，統計製程管制 |
+| UCL / LCL | Upper / Lower Control Limit，管制上下限   |
+| Dispatch  | 派工，將 Lot 指派給可用設備               |
+| Downtime  | 設備停機時間                              |
+| PM        | Preventive Maintenance，預防性保養        |
+| Hold      | 暫停該設備或 Lot 的生產                   |
 
 ---
 
@@ -199,71 +242,71 @@ SPC_Record: id, equipment_id, parameter, value, ucl, lcl, is_alarm, timestamp
 ## TypeScript 型別定義（frontend/src/types/mes.ts）
 
 ```typescript
-export type EquipmentStatus = 'RUNNING' | 'IDLE' | 'DOWN' | 'PM'
-export type EquipmentType   = 'CVD' | 'Etch' | 'CMP' | 'Diffusion'
+export type EquipmentStatus = "RUNNING" | "IDLE" | "DOWN" | "PM";
+export type EquipmentType = "CVD" | "Etch" | "CMP" | "Diffusion";
 
 export interface Equipment {
-  id: number
-  name: string
-  type: EquipmentType
-  status: EquipmentStatus
-  currentLotId: number | null
-  currentLot: string | null      // lot_number，顯示用
-  recipeName: string | null
-  utilization: number            // 0–100
-  temperature: number            // °C
-  pressure: number               // mTorr
-  ucl_temp: number
-  lcl_temp: number
-  ucl_pressure: number
-  lcl_pressure: number
-  isAlarm: boolean
-  updatedAt: string
+  id: number;
+  name: string;
+  type: EquipmentType;
+  status: EquipmentStatus;
+  currentLotId: number | null;
+  currentLot: string | null; // lot_number，顯示用
+  recipeName: string | null;
+  utilization: number; // 0–100
+  temperature: number; // °C
+  pressure: number; // mTorr
+  ucl_temp: number;
+  lcl_temp: number;
+  ucl_pressure: number;
+  lcl_pressure: number;
+  isAlarm: boolean;
+  updatedAt: string;
 }
 
-export type LotStatus = 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'ON_HOLD'
+export type LotStatus = "QUEUED" | "RUNNING" | "COMPLETED" | "ON_HOLD";
 
 export interface Lot {
-  id: number
-  lotNumber: string
-  product: string
-  recipeId: number
-  status: LotStatus
-  priority: number               // 1=最高, 5=最低
-  waferCount: number
-  createdAt: string
+  id: number;
+  lotNumber: string;
+  product: string;
+  recipeId: number;
+  status: LotStatus;
+  priority: number; // 1=最高, 5=最低
+  waferCount: number;
+  createdAt: string;
 }
 
 export interface AlarmEvent {
-  id: number
-  equipmentId: number
-  equipmentName: string
-  parameter: string              // 'temperature' | 'pressure'
-  value: number
-  ucl: number
-  lcl: number
-  severity: 'WARNING' | 'CRITICAL'
-  timestamp: string
-  acknowledged: boolean
+  id: number;
+  equipmentId: number;
+  equipmentName: string;
+  parameter: string; // 'temperature' | 'pressure'
+  value: number;
+  ucl: number;
+  lcl: number;
+  severity: "WARNING" | "CRITICAL";
+  timestamp: string;
+  acknowledged: boolean;
 }
 
 export interface WSMessage {
-  event: 'equipment_status_changed' | 'spc_alarm' | 'lot_dispatched'
-  payload: Record<string, unknown>
+  event: "equipment_status_changed" | "spc_alarm" | "lot_dispatched";
+  payload: Record<string, unknown>;
 }
 
 // 群組折疊用
 export interface EquipmentGroup {
-  type: EquipmentType
-  equipments: Equipment[]
-  alarmCount: number
-  utilization: number            // 群組平均稼動率
+  type: EquipmentType;
+  equipments: Equipment[];
+  alarmCount: number;
+  utilization: number; // 群組平均稼動率
   statusCount: {
-    running: number
-    idle: number
-    down: number
-    pm: number
-  }
+    running: number;
+    idle: number;
+    down: number;
+    pm: number;
+  };
 }
 ```
 
@@ -293,6 +336,7 @@ WS     /ws                                  WebSocket 連線
 ```
 
 ### WebSocket 事件格式
+
 ```json
 {
   "event": "equipment_status_changed",
@@ -312,19 +356,20 @@ WS     /ws                                  WebSocket 連線
 
 ## 各服務 Port
 
-| 服務            | Port  |
-|-----------------|-------|
-| Vue dev server  | 5173  |
-| Go API          | 8080  |
-| Python FastAPI  | 8001  |
-| PostgreSQL      | 5432  |
-| Redis           | 6379  |
+| 服務           | Port |
+| -------------- | ---- |
+| Vue dev server | 5173 |
+| Go API         | 8080 |
+| Python FastAPI | 8001 |
+| PostgreSQL     | 5432 |
+| Redis          | 6379 |
 
 ---
 
 ## 程式碼規範
 
 ### Vue（frontend/）
+
 - Composition API + `<script setup lang="ts">` 語法
 - 型別定義統一放 `src/types/mes.ts`，不在元件內重複定義
 - Pinia store 每個 domain 一個檔案
@@ -333,17 +378,20 @@ WS     /ws                                  WebSocket 連線
 - Element Plus 元件優先，不重複造輪子
 
 ### Go（backend/）
+
 - 標準三層：handler → service → repository
 - 錯誤統一回傳 `{"error": "訊息"}` JSON 格式
 - WebSocket Hub 統一在 `pkg/websocket/hub.go`
 - 環境變數透過 `.env` 注入，不 hardcode 連線字串
 
 ### Python（analytics/）
+
 - FastAPI 對外提供 HTTP endpoint，Go 透過 HTTP 呼叫
 - SPC 計算邏輯封裝在 `spc/control_chart.py`
 - 不與 Go 共用 DB 連線，透過 API 解耦
 
 ### SQL（migrations/）
+
 - 檔名格式：`001_init.sql`、`002_add_xxx.sql`
 - 每個 migration 使用 `IF NOT EXISTS`，可重複執行
 
