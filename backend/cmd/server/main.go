@@ -107,14 +107,19 @@ func main() {
 }
 
 func connectDB() *sqlx.DB {
-	dsn := fmt.Sprintf(
-		"host=%s port=%s dbname=%s user=%s password=%s sslmode=disable",
-		getEnv("DB_HOST", "localhost"),
-		getEnv("DB_PORT", "5432"),
-		getEnv("DB_NAME", "mes_dev"),
-		getEnv("DB_USER", "mes"),
-		getEnv("DB_PASSWORD", "mes_password"),
-	)
+	// 優先使用整串連線字串（Cloud Run + Neon 使用，內含 sslmode=require）
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		dsn = fmt.Sprintf(
+			"host=%s port=%s dbname=%s user=%s password=%s sslmode=%s",
+			getEnv("DB_HOST", "localhost"),
+			getEnv("DB_PORT", "5432"),
+			getEnv("DB_NAME", "mes_dev"),
+			getEnv("DB_USER", "mes"),
+			getEnv("DB_PASSWORD", "mes_password"),
+			getEnv("DB_SSLMODE", "disable"),
+		)
+	}
 	db, err := sqlx.Connect("postgres", dsn)
 	if err != nil {
 		log.Fatalf("[DB] 連線失敗: %v", err)
