@@ -43,7 +43,7 @@ Cloud Run: frontend (nginx)
 
 ---
 
-## 必要的程式碼修改（共 3 處）
+## 必要的程式碼修改（共 4 處）
 
 ### 1. `frontend/nginx.conf`（必改）
 
@@ -110,6 +110,30 @@ CMD ["nginx", "-g", "daemon off;"]
 FROM golang:1.23-alpine AS builder
 ```
 
+### 4. `backend/cmd/server/main.go`（支援 DATABASE_URL）
+
+新增對整串連線字串的支援，Cloud Run 部署時直接注入 Neon URL（內含 `sslmode=require`）；
+本機開發仍走個別環境變數，向下相容。
+
+```go
+func connectDB() *sqlx.DB {
+    // 優先使用整串連線字串（Cloud Run + Neon 使用，內含 sslmode=require）
+    dsn := os.Getenv("DATABASE_URL")
+    if dsn == "" {
+        dsn = fmt.Sprintf(
+            "host=%s port=%s dbname=%s user=%s password=%s sslmode=%s",
+            getEnv("DB_HOST", "localhost"),
+            getEnv("DB_PORT", "5432"),
+            getEnv("DB_NAME", "mes_dev"),
+            getEnv("DB_USER", "mes"),
+            getEnv("DB_PASSWORD", "mes_password"),
+            getEnv("DB_SSLMODE", "disable"),
+        )
+    }
+    ...
+}
+```
+
 ---
 
 ## 不需修改的檔案（已相容 Cloud Run + Neon）
@@ -118,8 +142,8 @@ FROM golang:1.23-alpine AS builder
 |------|------|
 | `frontend/src/composables/useWebSocket.ts` | 使用 `window.location.host` 動態產生 WS URL |
 | `frontend/src/api/equipment.ts` | 使用相對路徑 `/api/v1/...`，由 nginx proxy 轉發 |
-| `backend/cmd/server/main.go` | `lib/pq` 標準 TCP 連線，Neon 連線字串格式相同 |
-| `backend/cmd/server/main.go` | `ANALYTICS_URL` 從環境變數讀取，不需修改 |
+| `analytics/` | FastAPI 無狀態服務，環境變數無需調整 |
+| Redis | **後端目前未使用 Redis**，GCP 部署無需 Cloud Memorystore |
 
 ---
 
@@ -136,11 +160,12 @@ FROM golang:1.23-alpine AS builder
    ```
 5. 使用連線字串執行 migration：
    ```bash
-   psql "postgresql://mes_prod:PASSWORD@ep-xxxx.ap-southeast-1.aws.neon.tech/mes_production?sslmode=require" \
-     -f migrations/001_init.sql
-   psql "postgresql://mes_prod:PASSWORD@ep-xxxx.ap-southeast-1.aws.neon.tech/mes_production?sslmode=require" \
-     -f migrations/seed.sql
+   NEON_URL="postgresql://mes_prod:PASSWORD@ep-xxxx.ap-southeast-1.aws.neon.tech/mes_production?sslmode=require"
+   psql "$NEON_URL" -f migrations/001_init.sql
+   psql "$NEON_URL" -f migrations/seed.sql
    ```
+
+   > `001_init.sql` 已包含 SPC 相關表格（`spc_record`），無須額外執行其他 migration。
 
 ### 前置二：GCP 環境設定
 
@@ -191,42 +216,31 @@ docker push ${REGISTRY}/frontend:latest
 ### Step 3：部署至 Cloud Run（依序）
 
 ```bash
-# 3a. Analytics（僅內部流量）
+# 3a. Analytics（僅允許內部 + Cloud Run 服務呼叫，不對外公開）
+# 注意：--ingress=internal-and-cloud-run 才能讓 backend Cloud Run 呼叫 analytics
 gcloud run deploy analytics \
   --image=${REGISTRY}/analytics:latest \
   --region=${REGION} \
   --service-account=mini-mes-runner@${PROJECT_ID}.iam.gserviceaccount.com \
   --port=8001 --memory=512Mi \
-  --ingress=internal \
+  --ingress=internal-and-cloud-run \
   --allow-unauthenticated
 
 ANALYTICS_URL=$(gcloud run services describe analytics \
   --region=${REGION} --format="value(status.url)")
 
-# 3b. Backend（連接 Neon，不需要 --add-cloudsql-instances）
-# DATABASE_URL 格式讓 backend 直接用整串連線，
-# 或維持原本拆開的 DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD 環境變數
-NEON_URL=$(gcloud secrets versions access latest --secret=neon-database-url)
-# 拆解連線字串為個別環境變數（維持後端原有讀取方式）
-export DB_HOST=$(echo $NEON_URL | sed 's/.*@//' | cut -d'/' -f1 | cut -d':' -f1)
-export DB_PORT=5432
-export DB_NAME=mes_production
-export DB_USER=mes_prod
-export DB_PASSWORD=$(echo $NEON_URL | sed 's/.*://' | cut -d'@' -f1)
-
+# 3b. Backend（連接 Neon，DATABASE_URL 直接注入，包含 sslmode=require）
+# backend 已支援 DATABASE_URL 優先讀取（見程式碼修改第 4 點）
 gcloud run deploy backend \
   --image=${REGISTRY}/backend:latest \
   --region=${REGION} \
   --service-account=mini-mes-runner@${PROJECT_ID}.iam.gserviceaccount.com \
   --port=8080 --memory=512Mi \
-  --min-instances=0 \
+  --min-instances=1 \
   --timeout=3600 \
   --allow-unauthenticated \
-  --set-env-vars="DB_HOST=${DB_HOST},DB_PORT=5432,DB_NAME=mes_production,DB_USER=mes_prod,API_PORT=8080,ANALYTICS_URL=${ANALYTICS_URL}" \
-  --set-secrets="DB_PASSWORD=neon-database-url:latest"
-
-# 備註：若後端支援 DATABASE_URL 單一環境變數，可簡化為：
-# --set-secrets="DATABASE_URL=neon-database-url:latest"
+  --set-env-vars="API_PORT=8080,ANALYTICS_URL=${ANALYTICS_URL}" \
+  --set-secrets="DATABASE_URL=neon-database-url:latest"
 
 BACKEND_URL=$(gcloud run services describe backend \
   --region=${REGION} --format="value(status.url)")
@@ -245,9 +259,9 @@ FRONTEND_URL=$(gcloud run services describe frontend \
 echo "Demo URL: ${FRONTEND_URL}"
 ```
 
-> **補充說明**：Backend 目前使用 `DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD` 分開讀取。
-> Neon 連線需加上 `?sslmode=require`，需確認 `connectDB()` 的 DSN 格式有帶 `sslmode=require`。
-> 若沒有，可在 DB_HOST 加上 `sslmode` 參數或修改 `main.go` 的 DSN 字串。
+> **說明**：Backend 已支援 `DATABASE_URL` 優先讀取（程式碼修改第 4 點），
+> `--set-secrets` 直接將整串 Neon URL（含 `sslmode=require`）注入為 `DATABASE_URL`，
+> 無需額外處理 sslmode 問題，也不需在 shell 中解析密碼。
 
 ---
 
@@ -256,7 +270,7 @@ echo "Demo URL: ${FRONTEND_URL}"
 | 問題 | 解法 |
 |------|------|
 | Cloud Run 預設 timeout 300s | `--timeout=3600` |
-| 冷啟動斷線（min-instances=0） | 前端 `useWebSocket.ts` 已有 5 秒自動重連，可接受 |
+| 冷啟動斷線（analytics min-instances=0） | 前端 `useWebSocket.ts` 已有 5 秒自動重連；backend 設 `min-instances=1` 避免 WebSocket 冷啟動 |
 | 前端斷線重連 | `useWebSocket.ts` 已有 5 秒重連邏輯，不需修改 |
 
 ---
@@ -265,7 +279,7 @@ echo "Demo URL: ${FRONTEND_URL}"
 
 | 服務 | 規格 | 月費 |
 |------|------|------|
-| Cloud Run: backend | 512Mi, min-instances=0，按請求計費 | ~$0–2 |
+| Cloud Run: backend | 512Mi, min-instances=1（WebSocket 穩定性） | ~$3–5 |
 | Cloud Run: analytics / frontend | 512Mi / 256Mi，按請求計費 | ~$0–1 |
 | Neon PostgreSQL | 免費層（0.5 GB） | **$0** |
 | Artifact Registry | 少量 image 儲存 | ~$0.5 |
